@@ -1,6 +1,6 @@
 const ding = new Audio("https://www.soundjay.com/buttons/sounds/button-3.mp3");
 
-let socket = io("https://your-backend-url.onrender.com"); // Replace with your actual backend URL
+let socket = io("https://yttogether.onrender.com"); // Replace with your actual backend URL
 let player;
 let ready = false;
 let ignoreEmit = false;
@@ -123,3 +123,4 @@ socket.on("typing", () => {
 socket.on("stopTyping", () => {
   document.getElementById("typingIndicator").textContent = "";
 });
+
