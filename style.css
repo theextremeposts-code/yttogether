@@ -1,0 +1,52 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 20px;
+  background: #f2f2f2;
+}
+
+#video-container {  
+  position: sticky;
+  top: 0;
+  background: white;
+  z-index: 10;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #ccc;
+}
+
+#chat-container {
+  margin-bottom: 20px;
+}
+
+#player {
+  margin-top: 10px;
+  width: 100%;
+  max-width: 640px;
+  height: 360px;
+  background: #000;
+}
+
+#youtubeUrl {
+  width: 100%;
+  max-width: 640px;
+  padding: 10px;
+  font-size: 16px;
+}
+
+#chat-container {
+  max-width: 640px;
+}
+
+#messages {
+  height: 200px;
+  background: white;
+  border: 1px solid #ccc;
+  padding: 10px;
+  overflow-y: auto;
+  margin-bottom: 10px;
+}
+
+#chatInput {
+  width: 100%;
+  padding: 10px;
+  font-size: 16px;
+}
