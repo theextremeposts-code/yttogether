@@ -9,7 +9,7 @@ app.use(cors());
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "*", // Allow all origins (you can restrict this to your Netlify URL)
+    origin: "*", // You can restrict this to your Netlify domain if you want
     methods: ["GET", "POST"]
   }
 });
@@ -26,24 +26,38 @@ io.on("connection", (socket) => {
   connectedUsers.push(socket.id);
   console.log("User connected:", socket.id);
 
-  // Sync events
+  // ✅ JOIN SHARED ROOM
+  const room = "main";
+  socket.join(room);
+
+  // 🔄 Sync events (within the room only)
   socket.on("play", (time) => {
-    socket.broadcast.emit("play", time);
+    socket.to(room).emit("play", time);
   });
 
   socket.on("pause", (time) => {
-    socket.broadcast.emit("pause", time);
+    socket.to(room).emit("pause", time);
   });
 
   socket.on("loadVideo", (videoId) => {
-    socket.broadcast.emit("loadVideo", videoId);
+    socket.to(room).emit("loadVideo", videoId);
   });
 
-  // Chat events
+  // 💬 Chat events
   socket.on("chatMessage", (msg) => {
-    socket.broadcast.emit("chatMessage", msg);
+    socket.to(room).emit("chatMessage", msg);
   });
 
+  // ✍️ Typing indicator
+  socket.on("typing", () => {
+    socket.to(room).emit("typing");
+  });
+
+  socket.on("stopTyping", () => {
+    socket.to(room).emit("stopTyping");
+  });
+
+  // 🔌 Disconnect cleanup
   socket.on("disconnect", () => {
     console.log("User disconnected:", socket.id);
     connectedUsers = connectedUsers.filter((id) => id !== socket.id);
