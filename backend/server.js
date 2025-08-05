@@ -9,12 +9,15 @@ app.use(cors());
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "*", // You can restrict this to your Netlify domain if you want
+    origin: "*",
     methods: ["GET", "POST"]
   }
 });
 
 let connectedUsers = [];
+let currentVideoId = null;
+let currentVideoTime = 0;
+let isPlaying = false;
 
 io.on("connection", (socket) => {
   if (connectedUsers.length >= 2) {
@@ -26,29 +29,38 @@ io.on("connection", (socket) => {
   connectedUsers.push(socket.id);
   console.log("User connected:", socket.id);
 
-  // ✅ JOIN SHARED ROOM
   const room = "main";
   socket.join(room);
 
-  // 🔄 Sync events (within the room only)
+  // 🆕 Send current video state to new user
+  if (currentVideoId) {
+    socket.emit("loadVideo", currentVideoId);
+    socket.emit(isPlaying ? "play" : "pause", currentVideoTime);
+  }
+
+  socket.on("loadVideo", (videoId) => {
+    currentVideoId = videoId;
+    currentVideoTime = 0;
+    isPlaying = false;
+    socket.to(room).emit("loadVideo", videoId);
+  });
+
   socket.on("play", (time) => {
+    currentVideoTime = time;
+    isPlaying = true;
     socket.to(room).emit("play", time);
   });
 
   socket.on("pause", (time) => {
+    currentVideoTime = time;
+    isPlaying = false;
     socket.to(room).emit("pause", time);
   });
 
-  socket.on("loadVideo", (videoId) => {
-    socket.to(room).emit("loadVideo", videoId);
-  });
-
-  // 💬 Chat events
   socket.on("chatMessage", (msg) => {
     socket.to(room).emit("chatMessage", msg);
   });
 
-  // ✍️ Typing indicator
   socket.on("typing", () => {
     socket.to(room).emit("typing");
   });
@@ -57,7 +69,6 @@ io.on("connection", (socket) => {
     socket.to(room).emit("stopTyping");
   });
 
-  // 🔌 Disconnect cleanup
   socket.on("disconnect", () => {
     console.log("User disconnected:", socket.id);
     connectedUsers = connectedUsers.filter((id) => id !== socket.id);
