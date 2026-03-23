@@ -70,8 +70,7 @@ chatInput.addEventListener("input", () => {
 function appendMessage(msg, isRemote = false) {
   const msgBox = document.getElementById("messages");
   const msgDiv = document.createElement("div");
-  const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  msgDiv.innerHTML = `[${time}] ${msg}`;
+  msgDiv.innerHTML = msg; // no timestamp
   msgBox.appendChild(msgDiv);
   msgBox.scrollTop = msgBox.scrollHeight;
   if (isRemote) ding.play();
