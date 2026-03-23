@@ -6,7 +6,7 @@ const cors = require("cors");
 const app = express();
 
 // ✅ FIX: define before use
-const allowedOrigin = "https://ytwithvarna.netlify.app";
+const allowedOrigin = "*";
 
 // CORS for Express
 app.use(cors({
