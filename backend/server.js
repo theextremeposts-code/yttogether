@@ -4,20 +4,28 @@ const { Server } = require("socket.io");
 const cors = require("cors");
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: allowedOrigin
+}));
 
 const server = http.createServer(app);
+
+const allowedOrigin = "https://ytwithvarna.netlify.app";
+
 const io = new Server(server, {
   cors: {
-    origin: "*",
+    origin: function (origin, callback) {
+      if (!origin || origin === allowedOrigin) {
+        callback(null, true);
+      } else {
+        callback(new Error("CORS blocked: " + origin));
+      }
+    },
     methods: ["GET", "POST"]
   }
 });
 
 let connectedUsers = [];
-let currentVideoId = null;
-let currentVideoTime = 0;
-let isPlaying = false;
 
 io.on("connection", (socket) => {
   if (connectedUsers.length >= 2) {
@@ -29,44 +37,22 @@ io.on("connection", (socket) => {
   connectedUsers.push(socket.id);
   console.log("User connected:", socket.id);
 
-  const room = "main";
-  socket.join(room);
-
-  // 🆕 Send current video state to new user
-  if (currentVideoId) {
-    socket.emit("loadVideo", currentVideoId);
-    socket.emit(isPlaying ? "play" : "pause", currentVideoTime);
-  }
-
-  socket.on("loadVideo", (videoId) => {
-    currentVideoId = videoId;
-    currentVideoTime = 0;
-    isPlaying = false;
-    socket.to(room).emit("loadVideo", videoId);
-  });
-
+  // Sync events
   socket.on("play", (time) => {
-    currentVideoTime = time;
-    isPlaying = true;
-    socket.to(room).emit("play", time);
+    socket.broadcast.emit("play", time);
   });
 
   socket.on("pause", (time) => {
-    currentVideoTime = time;
-    isPlaying = false;
-    socket.to(room).emit("pause", time);
+    socket.broadcast.emit("pause", time);
   });
 
+  socket.on("loadVideo", (videoId) => {
+    socket.broadcast.emit("loadVideo", videoId);
+  });
+
+  // Chat events
   socket.on("chatMessage", (msg) => {
-    socket.to(room).emit("chatMessage", msg);
-  });
-
-  socket.on("typing", () => {
-    socket.to(room).emit("typing");
-  });
-
-  socket.on("stopTyping", () => {
-    socket.to(room).emit("stopTyping");
+    socket.broadcast.emit("chatMessage", msg);
   });
 
   socket.on("disconnect", () => {
