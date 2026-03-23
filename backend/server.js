@@ -4,14 +4,18 @@ const { Server } = require("socket.io");
 const cors = require("cors");
 
 const app = express();
+
+// ✅ FIX: define before use
+const allowedOrigin = "https://ytwithvarna.netlify.app";
+
+// CORS for Express
 app.use(cors({
   origin: allowedOrigin
 }));
 
 const server = http.createServer(app);
 
-const allowedOrigin = "https://ytwithvarna.netlify.app";
-
+// Socket.IO with strict origin check
 const io = new Server(server, {
   cors: {
     origin: function (origin, callback) {
@@ -25,19 +29,36 @@ const io = new Server(server, {
   }
 });
 
+// Store connected users
 let connectedUsers = [];
 
 io.on("connection", (socket) => {
-  if (connectedUsers.length >= 2) {
-    socket.emit("full", "Only 2 users allowed at a time.");
+
+  const user = socket.handshake.query.user?.toLowerCase();
+  const allowedUsers = ["aadi", "varna"];
+
+  // 🚫 Block unauthorized users
+  if (!user || !allowedUsers.includes(user)) {
+    console.log("Blocked unauthorized user:", user);
+    socket.emit("unauthorized", "Access denied");
     socket.disconnect(true);
     return;
   }
 
-  connectedUsers.push(socket.id);
-  console.log("User connected:", socket.id);
+  // 🚫 Prevent same user joining twice
+  const existingUser = connectedUsers.find(u => u.user === user);
+  if (existingUser) {
+    console.log(`Duplicate login blocked: ${user}`);
+    socket.emit("duplicate", "User already connected");
+    socket.disconnect(true);
+    return;
+  }
 
-  // Sync events
+  // ✅ Allow connection
+  connectedUsers.push({ id: socket.id, user });
+  console.log(`User connected: ${user}`);
+
+  // ================= SYNC EVENTS =================
   socket.on("play", (time) => {
     socket.broadcast.emit("play", time);
   });
@@ -50,21 +71,32 @@ io.on("connection", (socket) => {
     socket.broadcast.emit("loadVideo", videoId);
   });
 
-  // Chat events
+  // ================= CHAT EVENTS =================
   socket.on("chatMessage", (msg) => {
     socket.broadcast.emit("chatMessage", msg);
   });
 
+  socket.on("typing", () => {
+    socket.broadcast.emit("typing");
+  });
+
+  socket.on("stopTyping", () => {
+    socket.broadcast.emit("stopTyping");
+  });
+
+  // ================= DISCONNECT =================
   socket.on("disconnect", () => {
-    console.log("User disconnected:", socket.id);
-    connectedUsers = connectedUsers.filter((id) => id !== socket.id);
+    console.log(`User disconnected: ${user}`);
+    connectedUsers = connectedUsers.filter((u) => u.id !== socket.id);
   });
 });
 
+// Basic route
 app.get("/", (req, res) => {
-  res.send("Socket server is running.");
+  res.send("Private YT Sync server is running 🔒");
 });
 
+// Start server
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
