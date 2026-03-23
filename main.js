@@ -48,16 +48,16 @@ function initApp(user) {
   // ✅ Socket connection AFTER identity is known
   socket = io("https://yttogether.onrender.com", {
   query: { user },
-  transports: ["websocket"],
+  transports: ["websocket", "polling"],
 });
 
 // Debug logs
 socket.on("connect", () => {
-  console.log("✅ Connected to server as", userName);
+  console.log("✅ Connected:", socket.id);
 });
 
-socket.on("connect_error", (err) => {
-  console.error("❌ Connection error:", err.message);
+socket.on("disconnect", () => {
+  console.log("❌ Disconnected");
 });
 
   // ================= VIDEO =================
