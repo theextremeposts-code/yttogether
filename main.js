@@ -1,30 +1,61 @@
 const ding = new Audio("https://www.soundjay.com/buttons/sounds/button-3.mp3");
 
-let socket = io("https://yttogether.onrender.com"); // Replace with your actual backend URL
+let socket = io("https://yttogether.onrender.com");
 let player;
 let ready = false;
 let ignoreEmit = false;
 
-// Video URL input
-document.getElementById("youtubeUrl").addEventListener("keypress", function (e) {
-  if (e.key === "Enter") {
+const urlParams = new URLSearchParams(window.location.search);
+const userParam = urlParams.get("user")?.toLowerCase();
+const userName = userParam === "aadi" ? "Aadi" : userParam === "varna" ? "Varna" : "Guest";
+const friendName = userName === "Aadi" ? "Varna" : "Aadi";
+
+const label = document.getElementById("userLabel");
+if (label) {
+  label.textContent = `Hi ${userName} 🌹`;
+}
+
+function getYouTubeVideoID(url) {
+  const match = url.match(/(?:v=|youtu\.be\/)([^&]+)/);
+  return match ? match[1] : null;
+}
+
+document.getElementById("youtubeUrl").addEventListener("keydown", function (e) {
+  if (e.key === "Enter" || e.keyCode === 13) {
+    e.preventDefault();
     const url = e.target.value.trim();
     const videoId = getYouTubeVideoID(url);
     if (videoId) {
+      console.log(`[${userName}] Emitting loadVideo:`, videoId);
       loadVideo(videoId);
-      socket.emit("loadVideo", videoId);   
+      socket.emit("loadVideo", videoId);
+      e.target.blur();
     }
   }
 });
 
-// Chat input and send
+document.getElementById("youtubeUrl").addEventListener("keyup", function (e) {
+  if ((e.key === "Enter" || e.keyCode === 13) && e.target.value.trim() !== "") {
+    e.preventDefault();
+    const url = e.target.value.trim();
+    const videoId = getYouTubeVideoID(url);
+    if (videoId) {
+      loadVideo(videoId);
+      socket.emit("loadVideo", videoId);
+      e.target.blur(); // hide keyboard
+    }
+  }
+});
+
 const chatInput = document.getElementById("chatInput");
 let typingTimeout;
 
 chatInput.addEventListener("keypress", function (e) {
   if (e.key === "Enter" && this.value.trim() !== "") {
-    socket.emit("chatMessage", this.value);
-    appendMessage("You: " + this.value);
+    const msgObj = { name: userName, text: this.value };
+    console.log(`[${userName}] Sending chat:`, msgObj);
+    socket.emit("chatMessage", msgObj);
+    appendMessage(`<span class="username ${userName.toLowerCase()}">${userName}</span>: ${this.value}`);
     this.value = "";
     socket.emit("stopTyping");
   }
@@ -32,95 +63,97 @@ chatInput.addEventListener("keypress", function (e) {
 
 chatInput.addEventListener("input", () => {
   socket.emit("typing");
-
   clearTimeout(typingTimeout);
-  typingTimeout = setTimeout(() => {
-    socket.emit("stopTyping");
-  }, 1000);
+  typingTimeout = setTimeout(() => socket.emit("stopTyping"), 1000);
 });
 
-// Append message with optional sound and timestamp
 function appendMessage(msg, isRemote = false) {
   const msgBox = document.getElementById("messages");
   const msgDiv = document.createElement("div");
-
   const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  msgDiv.textContent = `[${time}] ${msg}`;
-
+  msgDiv.innerHTML = `[${time}] ${msg}`;
   msgBox.appendChild(msgDiv);
   msgBox.scrollTop = msgBox.scrollHeight;
-
   if (isRemote) ding.play();
 }
 
-// Get video ID from YouTube URL
-function getYouTubeVideoID(url) {
-  const match = url.match(/(?:v=|youtu\.be\/)([^&]+)/);
-  return match ? match[1] : null;
-}
-
-// Load or reload video
 function loadVideo(videoId) {
-  if (player) {
+  if (player && typeof player.loadVideoById === "function") {
+    console.log(`[${userName}] Reusing player, loading: ${videoId}`);
     player.loadVideoById(videoId);
   } else {
+    console.log(`[${userName}] Creating new player for: ${videoId}`);
     player = new YT.Player("player", {
       videoId,
       events: {
-        onReady: () => { ready = true; },
+        onReady: (event) => {
+          console.log(`[${userName}] Player ready`);
+          ready = true;
+        },
         onStateChange: onPlayerStateChange
       }
     });
   }
+
+  if (player && typeof player.addEventListener === "function" && !player._eventHooked) {
+    player.addEventListener("onStateChange", onPlayerStateChange);
+    player._eventHooked = true;
+  }
 }
 
-// Handle video state changes
 function onPlayerStateChange(event) {
   if (!ready || ignoreEmit) return;
-
+  const currentTime = player.getCurrentTime();
   switch (event.data) {
     case YT.PlayerState.PLAYING:
-      socket.emit("play", player.getCurrentTime());
+      console.log(`[${userName}] Emitting PLAY at ${currentTime}`);
+      socket.emit("play", currentTime);
       break;
     case YT.PlayerState.PAUSED:
-      socket.emit("pause", player.getCurrentTime());
+      console.log(`[${userName}] Emitting PAUSE at ${currentTime}`);
+      socket.emit("pause", currentTime);
       break;
   }
 }
 
-// Socket events
+socket.on("loadVideo", (videoId) => {
+  console.log(`[${userName}] Received loadVideo:`, videoId);
+  loadVideo(videoId);
+});
+
 socket.on("play", (time) => {
-  if (player) {
+  if (player && typeof player.seekTo === "function") {
+    console.log(`[${userName}] Received play at ${time}`);
     ignoreEmit = true;
     player.seekTo(time, true);
     player.playVideo();
     setTimeout(() => (ignoreEmit = false), 500);
+  } else {
+    console.warn(`[${userName}] Cannot play: player not ready`);
   }
 });
 
 socket.on("pause", (time) => {
-  if (player) {
+  if (player && typeof player.seekTo === "function") {
+    console.log(`[${userName}] Received pause at ${time}`);
     ignoreEmit = true;
     player.seekTo(time, true);
     player.pauseVideo();
     setTimeout(() => (ignoreEmit = false), 500);
+  } else {
+    console.warn(`[${userName}] Cannot pause: player not ready`);
   }
 });
 
-socket.on("loadVideo", (videoId) => {
-  loadVideo(videoId);
-});
-
 socket.on("chatMessage", (msg) => {
-  appendMessage("Friend: " + msg, true);
+  const cssClass = msg.name.toLowerCase();
+  console.log(`[${userName}] Received chat from ${msg.name}: ${msg.text}`);
+  appendMessage(`<span class="username ${cssClass}">${msg.name}</span>: ${msg.text}`, true);
 });
 
-// 👇 Typing indicator support
 socket.on("typing", () => {
-  document.getElementById("typingIndicator").textContent = "Friend is typing...";
+  document.getElementById("typingIndicator").classList.remove("hidden");
 });
-
 socket.on("stopTyping", () => {
-  document.getElementById("typingIndicator").textContent = "";
+  document.getElementById("typingIndicator").classList.add("hidden");
 });
-
