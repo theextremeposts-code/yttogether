@@ -1,52 +1,206 @@
-body {
-  font-family: Arial, sans-serif;
-  margin: 20px;
-  background: #f2f2f2;
+* {
+  box-sizing: border-box;
 }
 
-#video-container {  
+body {
+  font-family: "Segoe UI", sans-serif;
+  background-color: #121212;
+  color: #e0e0e0;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+h3 {
+  color: #ffffff;
+  margin: 10px 0 0 10px !important;
+}
+
+#video-container {
   position: sticky;
   top: 0;
-  background: white;
+  background: #1e1e1e;
   z-index: 10;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #ccc;
-}
-
-#chat-container {
-  margin-bottom: 20px;
-}
-
-#player {
-  margin-top: 10px;
+  padding: 20px;
   width: 100%;
-  max-width: 640px;
-  height: 360px;
-  background: #000;
+  max-width: 700px;
+  border-bottom: 1px solid #333;
 }
 
 #youtubeUrl {
   width: 100%;
-  max-width: 640px;
-  padding: 10px;
+  padding: 10px 15px;
   font-size: 16px;
+  border-radius: 8px;
+  border: 1px solid #444;
+  background-color: #1e1e1e;
+  color: #eee;
+  outline: none;
+}
+
+#youtubeUrl::placeholder {
+  color: #777;
+}
+
+#player {
+  margin-top: 15px;
+  width: 100%;
+  height: 360px;
+  background: #000;
+  border-radius: 10px;
+  overflow: hidden;
 }
 
 #chat-container {
-  max-width: 640px;
+  position: sticky;
+  top: 390px; /* just below video */
+  height: calc(100vh - 420px); /* leaves room for video */
+  width: 100%;
+  max-width: 700px;
+  background-color: #1c1c1c;
+  padding: 20px;
+  border-radius: 0;
+  box-shadow: 0 -2px 20px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
 }
 
 #messages {
-  height: 200px;
-  background: white;
-  border: 1px solid #ccc;
-  padding: 10px;
+  flex-grow: 1;
+  border: 1px solid #333;
+  padding: 5px;
   overflow-y: auto;
-  margin-bottom: 10px;
+  background-color: #181818;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+#messages div {
+  margin-bottom: 2px;
+  padding: 3px 10px;
+  word-wrap: break-word;
+}
+
+#messages div:nth-child(odd) {
+  background: #2a2a2a;
+  color: #f5f5f5;
+}
+
+#messages div:nth-child(even) {
+  background: #3a3a3a;
+  color: #fff;
 }
 
 #chatInput {
   width: 100%;
-  padding: 10px;
+  padding: 12px 14px;
+  border: 1px solid #444;
+  border-radius: 8px;
   font-size: 16px;
+  outline: none;
+  background-color: #1e1e1e;
+  color: #e0e0e0;
+}
+
+#chatInput::placeholder {
+  color: #888;
+}
+
+#chatInput:focus,
+#youtubeUrl:focus {
+  box-shadow: 0 0 10px #00bfff;
+  border-color: #00bfff;
+}
+
+#typingIndicator.typing {
+  display: flex;
+  gap: 5px;
+  justify-content: flex-start;
+  align-items: center;
+  margin-top: 10px;
+}
+
+#typingIndicator.hidden {
+  display: none;
+}
+
+#typingIndicator span {
+  width: 6px;
+  height: 6px;
+  background: #bbb;
+  border-radius: 50%;
+  display: inline-block;
+  animation: bounce 1.2s infinite ease-in-out;
+}
+
+#typingIndicator span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+#typingIndicator span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes bounce {
+  0%, 80%, 100% {
+    transform: scale(0);
+    opacity: 0.3;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+
+#typingIndicator {
+  margin-top: 10px;
+  font-style: italic;
+  color: #bbb;
+  font-size: 14px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  #player {
+    height: 200px;
+  }
+
+  #messages {
+    height: 250px;
+  }
+}
+
+@keyframes fadeSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+#messages div {
+  animation: fadeSlideIn 0.3s ease-in-out;
+}
+
+.user-label {
+  font-size: 14px;
+  color: #888;
+  margin-bottom: 10px;
+}
+
+.username.varna {
+  color: #4da6ff; /* Light Blue */
+  font-weight: bold;
+}
+
+.username.aadi {
+  color: limegreen; /* Light Green */
+  font-weight: bold;
 }
