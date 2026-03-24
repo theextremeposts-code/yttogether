@@ -63,8 +63,23 @@ socket.on("disconnect", () => {
   // ================= VIDEO =================
 
 function getYouTubeVideoID(input) {
-  const match = input.match(/(?:v=|youtu\.be\/)([^&]+)/);
-  return match ? match[1] : null;
+  try {
+    const url = new URL(input);
+
+    // youtube.com or m.youtube.com
+    if (url.hostname.includes("youtube.com")) {
+      return url.searchParams.get("v");
+    }
+
+    // youtu.be short links
+    if (url.hostname === "youtu.be") {
+      return url.pathname.split("/")[1];
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 async function searchYouTube(query) {
@@ -135,7 +150,7 @@ async function searchYouTube(query) {
   });
 
   chatInput.addEventListener("input", () => {
-    socket.emit("typing");
+    socket.emit("typing", { name: userName });
     clearTimeout(typingTimeout);
     typingTimeout = setTimeout(() => socket.emit("stopTyping"), 1000);
   });
@@ -230,13 +245,21 @@ async function searchYouTube(query) {
     );
   });
 
-  socket.on("typing", () => {
-    document.getElementById("typingIndicator").classList.remove("hidden");
-  });
+  socket.on("typing", (data) => {
+  const indicator = document.getElementById("typingIndicator");
+
+  if (data && data.name) {
+    indicator.textContent = `${data.name} is typing...`;
+  }
+
+  indicator.classList.remove("hidden");
+});
 
   socket.on("stopTyping", () => {
-    document.getElementById("typingIndicator").classList.add("hidden");
-  });
+  const indicator = document.getElementById("typingIndicator");
+  indicator.classList.add("hidden");
+  indicator.textContent = ""; // reset
+});
 
   socket.on("unauthorized", () => {
     localStorage.removeItem("user");
