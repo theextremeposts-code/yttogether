@@ -76,8 +76,8 @@ io.on("connection", (socket) => {
     socket.broadcast.emit("chatMessage", msg);
   });
 
-  socket.on("typing", () => {
-    socket.broadcast.emit("typing");
+  socket.on("typing", (data) => {
+    socket.broadcast.emit("typing", data);
   });
 
   socket.on("stopTyping", () => {
