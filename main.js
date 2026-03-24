@@ -62,37 +62,56 @@ socket.on("disconnect", () => {
 
   // ================= VIDEO =================
 
-  function getYouTubeVideoID(url) {
-    const match = url.match(/(?:v=|youtu\.be\/)([^&]+)/);
-    return match ? match[1] : null;
+function getYouTubeVideoID(input) {
+  const match = input.match(/(?:v=|youtu\.be\/)([^&]+)/);
+  return match ? match[1] : null;
+}
+
+async function searchYouTube(query) {
+  try {
+    const res = await fetch(
+      `https://ytsearch-psi.vercel.app/api?q=${encodeURIComponent(query)}`
+    );
+
+    const data = await res.json();
+
+    console.log("Search response:", data); // 👈 add this
+
+    if (data?.videos?.length > 0) {
+      return data.videos[0].id;
+    }
+
+    return null;
+  } catch (err) {
+    console.error("Search failed:", err);
+    return null;
   }
+}
 
-  document.getElementById("youtubeUrl").addEventListener("keydown", function (e) {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      const url = e.target.value.trim();
-      const videoId = getYouTubeVideoID(url);
-      if (videoId) {
-        console.log(`[${userName}] Emitting loadVideo:`, videoId);
-        loadVideo(videoId);
-        socket.emit("loadVideo", videoId);
-        e.target.blur();
-      }
-    }
-  });
+  document.getElementById("youtubeUrl").addEventListener("keydown", async function (e) {
+  if (e.key === "Enter") {
+    e.preventDefault();
 
-  document.getElementById("youtubeUrl").addEventListener("keyup", function (e) {
-    if (e.key === "Enter" && e.target.value.trim() !== "") {
-      e.preventDefault();
-      const url = e.target.value.trim();
-      const videoId = getYouTubeVideoID(url);
-      if (videoId) {
-        loadVideo(videoId);
-        socket.emit("loadVideo", videoId);
-        e.target.blur();
-      }
+    const input = e.target.value.trim();
+
+    let videoId = getYouTubeVideoID(input);
+
+    // If not a URL → search
+    if (!videoId) {
+      console.log("🔍 Searching YouTube for:", input);
+      videoId = await searchYouTube(input);
     }
-  });
+
+    if (videoId) {
+      console.log(`[${userName}] Loading:`, videoId);
+      loadVideo(videoId);
+      socket.emit("loadVideo", videoId);
+      e.target.blur();
+    } else {
+      console.warn("No video found");
+    }
+  }
+});
 
   // ================= CHAT =================
 
