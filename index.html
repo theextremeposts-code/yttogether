@@ -20,17 +20,28 @@
 <p id="userLabel" class="user-label"></p>
 
 <div id="video-container">
-  <input type="search" id="youtubeUrl" placeholder="Paste YouTube URL here" autocomplete="off" />
+  <div class="input-group">
+  <input type="search" id="youtubeUrl" placeholder="Paste YouTube URL here" />
+  <button id="saveBtn">💾</button>
+</div>
   <div id="player"></div>
 </div>
 
-<div id="chat-container">
+<div id="tabs">
+  <button class="tab active" data-tab="chat">💬 Chat</button>
+  <button class="tab" data-tab="watchlist">📺 Playlist</button>
+</div>
+<div id="chat-container" class="tab-content active">
   <h4>Chat</h4>
   <div id="messages"></div>
   <input type="text" id="chatInput" placeholder="Type a message..." />
   <div id="typingIndicator" class="hidden">
     <span></span><span></span><span></span>
   </div>
+</div>
+<div id="watchlist-container" class="tab-content">
+  <h4>📺 Watch Later</h4>
+  <div id="watchlist"></div>
 </div>
 
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
