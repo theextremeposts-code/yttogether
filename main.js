@@ -10,6 +10,26 @@ let savedUser = localStorage.getItem("user");
 
 const identityScreen = document.getElementById("identity-screen");
 
+async function getVideoDetails(videoId) {
+  try {
+    const res = await fetch(
+      `https://ytsearch-psi.vercel.app/api?q=${videoId}`
+    );
+    const data = await res.json();
+
+    if (data?.videos?.length > 0) {
+      return {
+        title: data.videos[0].title,
+        thumbnail: data.videos[0].thumbnail
+      };
+    }
+  } catch (e) {
+    console.error("Metadata fetch failed", e);
+  }
+
+  return null;
+}
+
 // ================= IDENTITY FLOW =================
 
 // If already known → skip selection screen
@@ -54,6 +74,7 @@ function initApp(user) {
 // Debug logs
 socket.on("connect", () => {
   console.log("✅ Connected:", socket.id);
+  socket.emit("getWatchlist");
 });
 
 socket.on("disconnect", () => {
@@ -121,6 +142,7 @@ async function searchYouTube(query) {
       console.log(`[${userName}] Loading:`, videoId);
       loadVideo(videoId);
       socket.emit("loadVideo", videoId);
+      saveCurrentVideo(videoId);
       e.target.blur();
     } else {
       console.warn("No video found");
@@ -189,6 +211,7 @@ async function searchYouTube(query) {
       player.addEventListener("onStateChange", onPlayerStateChange);
       player._eventHooked = true;
     }
+	currentVideoIdGlobal = videoId;
   }
 
   function onPlayerStateChange(event) {
@@ -245,6 +268,32 @@ async function searchYouTube(query) {
     );
   });
 
+  // ================= WATCHLIST UI =================
+
+socket.on("watchlistUpdated", (list) => {
+  const container = document.getElementById("watchlist");
+
+  if (!container) {
+    console.error("Watchlist container not found!");
+    return;
+  }
+
+  container.innerHTML = ""; // clear old UI
+
+  list.forEach(item => {
+    const div = document.createElement("div");
+
+    div.innerHTML = `
+      <img src="${item.thumbnail}" />
+      <span>${item.title}</span>
+      <button onclick="playSaved('${item.videoId}')">▶</button>
+      <button onclick="deleteSaved(${item.id})">❌</button>
+    `;
+
+    container.appendChild(div);
+  });
+});
+
   socket.on("typing", (data) => {
   const indicator = document.getElementById("typingIndicator");
 
@@ -274,3 +323,55 @@ async function searchYouTube(query) {
     `;
   });
 }
+
+let currentVideoIdGlobal = null;
+
+async function saveCurrentVideo(videoId) {
+  if (!videoId) return;
+
+  const details = await getVideoDetails(videoId);
+  if (!details) return;
+
+  socket.emit("addVideo", {
+    videoId,
+    title: details.title,
+    thumbnail: details.thumbnail
+  });
+
+  console.log("✅ Saved:", videoId);
+}
+
+function playSaved(videoId) {
+  if (typeof loadVideo === "function") {
+    loadVideo(videoId);
+    socket.emit("loadVideo", videoId);
+  }
+}
+
+function deleteSaved(id) {
+  socket.emit("deleteVideo", id);
+}
+
+document.querySelectorAll(".tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+    tab.classList.add("active");
+
+    const tabName = tab.dataset.tab;
+
+    document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+
+    if (tabName === "chat") {
+      document.getElementById("chat-container").classList.add("active");
+    } else {
+      document.getElementById("watchlist-container").classList.add("active");
+    }
+  });
+});
+
+document.getElementById("saveBtn").addEventListener("click", () => {
+  if (currentVideoIdGlobal) {
+    saveCurrentVideo(currentVideoIdGlobal);
+  }
+});

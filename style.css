@@ -83,7 +83,7 @@ h3 {
   box-shadow: 0 0 20px #2affaa;
 }
 
-/* Varna button */
+/* varna button */
 .identity-btn.varna {
   background: rgba(255, 100, 150, 0.15);
   color: #ff8fb3;
@@ -295,4 +295,89 @@ h3 {
     top: 240px;
     height: calc(100vh - 260px);
   }
+}
+
+#watchlist-container {
+  width: 100%;
+  max-width: 700px;
+  background: #1c1c1c;
+  padding: 20px;
+  margin-top: 10px;
+  border-top: 1px solid #333;
+}
+
+#watchlist div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #2a2a2a;
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+#watchlist img {
+  width: 100px;
+  border-radius: 6px;
+}
+
+#watchlist button {
+  margin-left: auto;
+  margin-right: 5px;
+  padding: 5px 8px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+#tabs {
+  display: flex;
+  width: 100%;
+  max-width: 700px;
+  margin-top: 10px;
+}
+
+.tab {
+  flex: 1;
+  padding: 10px;
+  background: #2a2a2a;
+  color: #ccc;
+  border: none;
+  cursor: pointer;
+}
+
+.tab.active {
+  background: #444;
+  color: #fff;
+}
+
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+.input-group {
+  display: flex;
+  gap: 10px;
+}
+
+.input-group input {
+  flex: 1;
+}
+
+#saveBtn {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #444;
+  background: #2a2a2a;
+  color: #fff;
+  cursor: pointer;
+}
+
+#saveBtn:hover {
+  background: #00bfff;
+  color: #000;
 }
