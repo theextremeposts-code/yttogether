@@ -3,6 +3,19 @@ const http = require("http");
 const { Server } = require("socket.io");
 const cors = require("cors");
 
+const fs = require("fs");
+const path = require("path");
+
+const DATA_FILE = path.join(__dirname, "data", "watchlist.json");
+
+function readWatchlist() {
+  if (!fs.existsSync(DATA_FILE)) return [];
+  return JSON.parse(fs.readFileSync(DATA_FILE));
+}
+
+function saveWatchlist(data) {
+  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+}
 const app = express();
 
 // ✅ FIX: define before use
@@ -83,6 +96,41 @@ io.on("connection", (socket) => {
   socket.on("stopTyping", () => {
     socket.broadcast.emit("stopTyping");
   });
+  
+  // ================= WATCHLIST EVENTS =================
+
+// Get watchlist
+socket.on("getWatchlist", () => {
+  const list = readWatchlist();
+  socket.emit("watchlistUpdated", list);
+});
+
+// Add video
+socket.on("addVideo", (video) => {
+  const list = readWatchlist();
+
+  const newItem = {
+    id: Date.now(),
+    videoId: video.videoId,
+    title: video.title,
+    thumbnail: video.thumbnail
+  };
+
+  list.push(newItem);
+  saveWatchlist(list);
+
+  io.emit("watchlistUpdated", list);
+});
+
+// Delete video
+socket.on("deleteVideo", (id) => {
+  let list = readWatchlist();
+
+  list = list.filter(item => item.id !== id);
+
+  saveWatchlist(list);
+  io.emit("watchlistUpdated", list);
+});
 
   // ================= DISCONNECT =================
   socket.on("disconnect", () => {
