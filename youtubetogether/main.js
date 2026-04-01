@@ -4,15 +4,13 @@ let socket;
 let player;
 let ready = false;
 let ignoreEmit = false;
-let currentVideoIdGlobal = null; // Global variable to track the currently playing video
+let currentVideoIdGlobal = null;
 
 const allowedUsers = ["aadi", "varna"];
 let savedUser = localStorage.getItem("user");
 
 const identityScreen = document.getElementById("identity-screen");
 
-// ================= UTILITY FUNCTIONS =================
-// Moved outside of initApp so the save button can access them!
 async function getVideoDetails(videoId) {
   try {
     const res = await fetch(`https://ytsearch-psi.vercel.app/api?q=${videoId}`);
@@ -49,7 +47,6 @@ async function searchYouTube(query) {
   }
 }
 
-// ================= IDENTITY FLOW =================
 if (savedUser && allowedUsers.includes(savedUser)) {
   identityScreen.classList.add("hidden");
   initApp(savedUser);
@@ -64,7 +61,6 @@ if (savedUser && allowedUsers.includes(savedUser)) {
   });
 }
 
-// ================= MAIN APP =================
 function initApp(user) {
   const userName = user === "aadi" ? "Aadi" : "Varna";
   const label = document.getElementById("userLabel");
@@ -84,7 +80,6 @@ function initApp(user) {
     console.log("❌ Disconnected");
   });
 
-  // ================= VIDEO INPUT (NO AUTOSAVE) =================
   document.getElementById("youtubeUrl").addEventListener("keydown", async function (e) {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -100,9 +95,6 @@ function initApp(user) {
         console.log(`[${userName}] Loading:`, videoId);
         loadVideo(videoId);
         socket.emit("loadVideo", videoId);
-        
-        // AUTOSAVE REMOVED FROM HERE
-        
         e.target.blur();
       } else {
         console.warn("No video found");
@@ -110,7 +102,6 @@ function initApp(user) {
     }
   });
 
-  // ================= CHAT =================
   const chatInput = document.getElementById("chatInput");
   let typingTimeout;
 
@@ -139,7 +130,6 @@ function initApp(user) {
     if (isRemote) ding.play();
   }
 
-  // ================= PLAYER =================
   function loadVideo(videoId) {
     if (player && typeof player.loadVideoById === "function") {
       player.loadVideoById(videoId);
@@ -157,7 +147,7 @@ function initApp(user) {
       player.addEventListener("onStateChange", onPlayerStateChange);
       player._eventHooked = true;
     }
-    currentVideoIdGlobal = videoId; // Update global ID so the save button knows what's playing
+    currentVideoIdGlobal = videoId;
   }
 
   function onPlayerStateChange(event) {
@@ -174,7 +164,6 @@ function initApp(user) {
     }
   }
 
-  // ================= SOCKET EVENTS =================
   socket.on("loadVideo", (videoId) => { loadVideo(videoId); });
 
   socket.on("play", (time) => {
@@ -200,11 +189,10 @@ function initApp(user) {
     appendMessage(`<span class="username ${cssClass}">${msg.name}</span>: ${msg.text}`, true);
   });
 
-  // ================= WATCHLIST FOLDERS UI =================
   socket.on("watchlistUpdated", (list) => {
     const container = document.getElementById("watchlist");
     if (!container) return;
-    container.innerHTML = ""; // clear old UI
+    container.innerHTML = ""; 
 
     const folders = ["Movies", "Telugu", "Tamil", "Hindi", "English", "Malayalam", "Others"];
 
@@ -255,14 +243,11 @@ function initApp(user) {
   });
 }
 
-// ================= MANUAL SAVING & UI CLICKS =================
-
 async function saveCurrentVideo(videoId, category) {
   if (!videoId) return;
   const details = await getVideoDetails(videoId);
   if (!details) return;
 
-  // Uses the global socket to emit
   if (socket) {
     socket.emit("addVideo", {
       videoId,
@@ -287,7 +272,6 @@ function deleteSaved(id) {
   if (socket) socket.emit("deleteVideo", id);
 }
 
-// Tab Switching
 document.querySelectorAll(".tab").forEach(tab => {
   tab.addEventListener("click", () => {
     document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
@@ -304,15 +288,12 @@ document.querySelectorAll(".tab").forEach(tab => {
   });
 });
 
-// Explicit Save Button
 document.getElementById("saveBtn").addEventListener("click", async () => {
   const input = document.getElementById("youtubeUrl").value.trim();
   const category = document.getElementById("categorySelect").value;
   
-  // Gets the ID from the input, or uses the currently playing video ID
   let videoId = getYouTubeVideoID(input) || currentVideoIdGlobal;
 
-  // Search if it's text and not a standard URL
   if (!videoId && input) {
     console.log("🔍 Searching YouTube to save:", input);
     videoId = await searchYouTube(input);
@@ -320,7 +301,7 @@ document.getElementById("saveBtn").addEventListener("click", async () => {
 
   if (videoId) {
     saveCurrentVideo(videoId, category);
-    document.getElementById("youtubeUrl").value = ""; // Clear input after save
+    document.getElementById("youtubeUrl").value = "";
   } else {
     alert("Please load a video or enter a valid YouTube link to save.");
   }
